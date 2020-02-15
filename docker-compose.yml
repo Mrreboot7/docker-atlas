@@ -1,0 +1,262 @@
+version: '3'
+
+services:
+  namenode:
+    image: myy92715/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: bigdata-hadoop-namenode
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop-hive.env
+    ports:
+      - 9870:9870
+    networks:
+      - bigdata
+
+  datanode:
+    image: myy92715/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: bigdata-hadoop-datanode
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: 'namenode:9870'
+    env_file:
+      - ./hadoop-hive.env
+    ports:
+      - 9864:9864
+    networks:
+      - bigdata
+
+  resourcemanager:
+    image: myy92715/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    container_name: bigdata-hadoop-resourcemanager
+    environment:
+      SERVICE_PRECONDITION: 'namenode:9870 datanode:9864'
+    env_file:
+      - ./hadoop-hive.env
+    ports:
+      - 8088:8088
+    networks:
+      - bigdata
+
+  nodemanager1:
+    image: myy92715/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    container_name: bigdata-hadoop-nodemanager
+    environment:
+      SERVICE_PRECONDITION: 'namenode:9870 datanode:9864 resourcemanager:8088'
+    env_file:
+      - ./hadoop-hive.env
+    ports:
+      - 8042:8042
+    networks:
+      - bigdata
+
+  historyserver:
+    image: myy92715/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
+    container_name: bigdata-hadoop-historyserver
+    volumes:
+      - hadoop_historyserver:/hadoop/yarn/timeline
+    environment:
+      SERVICE_PRECONDITION: 'namenode:9870 datanode:9864 resourcemanager:8088'
+    env_file:
+      - ./hadoop-hive.env
+    ports:
+      - 8188:8188
+    networks:
+      - bigdata
+
+  zookeeper:
+    image: zookeeper:latest
+    container_name: bigdata-zookeeper
+    volumes:
+      - ./data/zookeeper/data:/data
+      - ./data/zookeeper/datalog:/datalog
+      - ./data/zookeeper/logs:/logs
+    environment:
+      ZOO_4LW_COMMANDS_WHITELIST: mntr,conf,ruok
+    ports:
+      - 2181:2181
+    networks:
+      - bigdata
+
+  hbase-master:
+    image: myy92715/hbase-master:2.2.3-hadoop3.2.1-java8
+    container_name: bigdata-hbase-master
+    hostname: hbase-master
+    env_file:
+      - ./hbase.env
+    environment:
+      SERVICE_PRECONDITION: 'namenode:9870 datanode:9864 zookeeper:2181'
+    ports:
+      - 16010:16010
+    networks:
+      - bigdata
+
+  hbase-region:
+    image: myy92715/hbase-regionserver:2.2.3-hadoop3.2.1-java8
+    container_name: bigdata-hbase-regionserver
+    hostname: hbase-regionserver
+    env_file:
+      - ./hbase.env
+    environment:
+      HBASE_CONF_hbase_regionserver_hostname: hbase-region
+      SERVICE_PRECONDITION: 'namenode:9870 datanode:9864 zookeeper:2181 hbase-master:16010'
+    ports:
+      - 16030:16030
+    networks:
+      - bigdata
+
+  hive-server:
+    image: myy92715/hive:3.1.2-mysql-metastore
+    container_name: bigdata-hive-server
+    env_file:
+      - ./hadoop-hive.env
+    environment:
+      SERVICE_PRECONDITION: 'hive-metastore:9083'
+    ports:
+      - '10000:10000'
+      - '10002:10002'
+    volumes:
+      - ./hook/hive:/opt/hive/hook/hive/
+      - ./atlas-application.properties:/opt/hive/conf/atlas-application.properties
+      - ./hook-bin:/opt/hive/hook-bin
+    networks:
+      - bigdata
+
+  hive-metastore:
+    image: myy92715/hive:3.1.2-mysql-metastore
+    container_name: bigdata-hive-metastore
+    env_file:
+      - ./hadoop-hive.env
+    command: /opt/hive/bin/hive --service metastore
+    volumes:
+      - ./hook/hive:/opt/hive/hook/hive/
+      - ./atlas-application.properties:/opt/hive/conf/atlas-application.properties
+      - ./hook-bin:/opt/hive/hook-bin
+    environment:
+      SERVICE_PRECONDITION: 'namenode:9870 datanode:9864 hive-metastore-mysql:3306'
+      # HIVE_SITE_CONF_hive_metastore_schema_verification: "false"
+    ports:
+      - '9083:9083'
+    networks:
+      - bigdata
+
+  hive-metastore-mysql:
+    image: mysql:8.0.19
+    container_name: bigdata-hive-metastore-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: hive
+      MYSQL_PASSWORD: hive
+      MYSQL_DATABASE: metastore
+    volumes:
+      - hive_mysql_data:/var/lib/mysql
+    networks:
+      - bigdata
+
+  presto-coordinator:
+    image: shawnzhu/prestodb:329
+    container_name: bigdata-hive-presto-coordinator
+    volumes:
+      - ./presto/catalog/db2.properties:/usr/lib/presto/default/etc/catalog/db2.properties:ro
+      - ./presto/catalog/hive.properties:/usr/lib/presto/default/etc/catalog/hive.properties:ro
+      - ./presto/catalog/thrift.properties:/usr/lib/presto/default/etc/catalog/thrift.properties:ro
+      - ./presto/hadoop:/etc/hadoop
+    ports:
+      - '8081:8080'
+    networks:
+      - bigdata
+
+  kafka1:
+    image: myy92715/kafka:2.4.0
+    container_name: bigdata-kafka1
+    ports:
+      - 9092:9092
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ADVERTISED_HOST_NAME: kafka1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # KAFKA_CREATE_TOPICS: 'stream-in:2:1,stream-out:2:1'
+      KAFKA_JMX_OPTS: '-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=kafka1 -Dcom.sun.management.jmxremote.rmi.port=1099'
+      JMX_PORT: 1099
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data/kafka1:/kafka
+    networks:
+      - bigdata
+
+  kafkamanage:
+    image: zenko/kafka-manager:2.0.0.2
+    container_name: bigdata-kafkamanage
+    ports:
+      - 9090:9000
+    environment:
+      ZK_HOSTS: zookeeper:2181
+      APPLICATION_SECRET: random-secret
+      KAFKA_MANAGER_AUTH_ENABLED: 'true'
+      KAFKA_MANAGER_USERNAME: elliot
+      KAFKA_MANAGER_PASSWORD: reboot
+    depends_on:
+      - kafka1
+      - zookeeper
+    volumes:
+      - ./data/kafkamanage:/kafka-manager/conf
+    command: -Dpidfile.path=/dev/null
+    networks:
+      - bigdata
+
+  solr:
+    image: solr:latest
+    container_name: bigdata-solr
+    ports:
+      - '8983:8983'
+    depends_on:
+      - zookeeper
+    environment:
+      ZK_HOST: 'zookeeper:2181'
+    volumes:
+      - ./data/solr:/var/solr
+    networks:
+      - bigdata
+
+  dubbo-admin:
+    image: apache/dubbo-admin
+    container_name: bigdata-dubbo-admin
+    depends_on:
+      - zookeeper
+    ports:
+      - 8082:8080
+    environment:
+      - admin.registry.address=zookeeper://zookeeper:2181
+      - admin.config-center=zookeeper://zookeeper:2181
+      - admin.metadata-report.address=zookeeper://zookeeper:2181
+    networks:
+      - bigdata
+
+  atlas:
+    image: odpi/apache-atlas:2.0.0
+    container_name: bigdata-atlas
+    ports:
+      - 21000:21000
+    volumes:
+      - ./atlas-application.properties:/opt/apache/atlas/conf/atlas-application.properties
+      - ./atlas-env.sh:/opt/apache/atlas/conf/atlas-env.sh
+      - ./hook-bin:/opt/apache/atlas/hook-bin
+    depends_on:
+      - zookeeper
+      - kafka1
+    networks:
+      - bigdata
+
+volumes:
+  hadoop_namenode:
+  hadoop_datanode:
+  hadoop_historyserver:
+  hive_mysql_data:
+networks:
+  bigdata:
+    external: true
