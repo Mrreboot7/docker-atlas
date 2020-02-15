@@ -116,8 +116,8 @@ services:
     environment:
       SERVICE_PRECONDITION: 'hive-metastore:9083'
     ports:
-      - '10000:10000'
-      - '10002:10002'
+      - 10000:10000
+      - 10002:10002
     volumes:
       - ./hook/hive:/opt/hive/hook/hive/
       - ./atlas-application.properties:/opt/hive/conf/atlas-application.properties
@@ -139,7 +139,7 @@ services:
       SERVICE_PRECONDITION: 'namenode:9870 datanode:9864 hive-metastore-mysql:3306'
       # HIVE_SITE_CONF_hive_metastore_schema_verification: "false"
     ports:
-      - '9083:9083'
+      - 9083:9083
     networks:
       - bigdata
 
@@ -151,6 +151,8 @@ services:
       MYSQL_USER: hive
       MYSQL_PASSWORD: hive
       MYSQL_DATABASE: metastore
+    ports:
+      - 3306:3306
     volumes:
       - hive_mysql_data:/var/lib/mysql
     networks:
@@ -165,7 +167,7 @@ services:
       - ./presto/catalog/thrift.properties:/usr/lib/presto/default/etc/catalog/thrift.properties:ro
       - ./presto/hadoop:/etc/hadoop
     ports:
-      - '8081:8080'
+      - 8081:8080
     networks:
       - bigdata
 
@@ -213,7 +215,7 @@ services:
     image: solr:latest
     container_name: bigdata-solr
     ports:
-      - '8983:8983'
+      - 8983:8983
     depends_on:
       - zookeeper
     environment:
