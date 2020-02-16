@@ -225,20 +225,6 @@ services:
     networks:
       - bigdata
 
-  dubbo-admin:
-    image: apache/dubbo-admin
-    container_name: bigdata-dubbo-admin
-    depends_on:
-      - zookeeper
-    ports:
-      - 8082:8080
-    environment:
-      - admin.registry.address=zookeeper://zookeeper:2181
-      - admin.config-center=zookeeper://zookeeper:2181
-      - admin.metadata-report.address=zookeeper://zookeeper:2181
-    networks:
-      - bigdata
-
   atlas:
     image: odpi/apache-atlas:2.0.0
     container_name: bigdata-atlas
