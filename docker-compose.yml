@@ -43,7 +43,7 @@ services:
 
   nodemanager1:
     image: myy92715/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
-    container_name: bigdata-hadoop-nodemanager
+    container_name: bigdata-hadoop-nodemanager1
     environment:
       SERVICE_PRECONDITION: 'namenode:9870 datanode:9864 resourcemanager:8088'
     env_file:
