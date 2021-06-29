@@ -68,7 +68,7 @@ services:
       - bigdata
 
   zookeeper:
-    image: zookeeper:latest
+    image: zookeeper:3.5
     container_name: bigdata-zookeeper
     volumes:
       - ./data/zookeeper/data:/data
@@ -195,7 +195,7 @@ services:
     image: zenko/kafka-manager:2.0.0.2
     container_name: bigdata-kafkamanage
     ports:
-      - 9090:9000
+      - 9091:9000
     environment:
       ZK_HOSTS: zookeeper:2181
       APPLICATION_SECRET: random-secret
@@ -212,7 +212,7 @@ services:
       - bigdata
 
   solr:
-    image: solr:latest
+    image: solr:8.3
     container_name: bigdata-solr
     ports:
       - 8983:8983
