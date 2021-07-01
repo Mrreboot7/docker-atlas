@@ -75,7 +75,9 @@ services:
       - ./data/zookeeper/datalog:/datalog
       - ./data/zookeeper/logs:/logs
     environment:
-      ZOO_4LW_COMMANDS_WHITELIST: mntr,conf,ruok
+      - ZOO_MY_ID=1
+      - ZOO_SERVERS=server.1=0.0.0.0:2888:3888;2181
+      - ZOO_4LW_COMMANDS_WHITELIST=*
     ports:
       - 2181:2181
     networks:
@@ -128,6 +130,8 @@ services:
   hive-metastore:
     image: myy92715/hive:3.1.2-mysql-metastore
     container_name: bigdata-hive-metastore
+    depends_on:
+      - namenode
     env_file:
       - ./hadoop-hive.env
     command: /opt/hive/bin/hive --service metastore
