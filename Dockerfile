@@ -7,6 +7,4 @@ RUN apk --no-cache add curl
 COPY startup.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/startup.sh
 
-USER atlas:atlas
-
 ENTRYPOINT ["startup.sh"]
