@@ -146,7 +146,6 @@ services:
       - ./hook-bin:/opt/hive/hook-bin
     environment:
       SERVICE_PRECONDITION: 'namenode:9870 datanode:9864 hive-metastore-mysql:3306'
-      # HIVE_SITE_CONF_hive_metastore_schema_verification: "false"
     ports:
       - 9083:9083
     networks:
@@ -235,7 +234,7 @@ services:
       - bigdata
 
   atlas:
-    image: odpi/apache-atlas:2.0.0
+    image: myy92715/atlas:standalone
     container_name: bigdata-atlas
     ports:
       - 21000:21000
@@ -246,6 +245,7 @@ services:
     depends_on:
       - zookeeper
       - kafka1
+      - solr
     networks:
       - bigdata
 
