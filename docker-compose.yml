@@ -96,7 +96,7 @@ services:
     networks:
       - bigdata
     depends_on:
-      - hbase-master
+      - hbase-region
 
   hbase-region:
     image: myy92715/hbase-regionserver:2.2.3-hadoop3.2.1-java8
@@ -138,21 +138,21 @@ services:
       - namenode
     env_file:
       - ./hadoop-hive.env
-    command: /opt/hive/bin/hive --service metastore
+    command: schematool -initSchema -dbType mysql && /opt/hive/bin/hive --service metastore
     volumes:
       - ./hook/hive:/opt/hive/hook/hive/
       - ./atlas-application.properties:/opt/hive/conf/atlas-application.properties
       - ./hook-bin:/opt/hive/hook-bin
     environment:
       SERVICE_PRECONDITION: 'namenode:9870 datanode:9864 hive-metastore-mysql:3306'
-      HIVE_SITE_CONF_hive_metastore_schema_verification: "false"
+      # HIVE_SITE_CONF_hive_metastore_schema_verification: "false"
     ports:
       - 9083:9083
     networks:
       - bigdata
 
   hive-metastore-mysql:
-    image: mysql:5.7
+    image: mysql:8.0.19
     container_name: bigdata-hive-metastore-mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
