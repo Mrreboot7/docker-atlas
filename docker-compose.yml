@@ -115,10 +115,12 @@ services:
       - zookeeper
 
   hive-server:
-    image: myy92715/hive:3.1.2-mysql-metastore
+    image: myy92715/hive:server
     container_name: bigdata-hive-server
     env_file:
       - ./hadoop-hive.env
+    depends_on:
+      - hive-metastore
     environment:
       SERVICE_PRECONDITION: 'hive-metastore:9083'
     ports:
@@ -132,13 +134,12 @@ services:
       - bigdata
 
   hive-metastore:
-    image: myy92715/hive:3.1.2-mysql-metastore
+    image: myy92715/hive:metastore
     container_name: bigdata-hive-metastore
     depends_on:
       - namenode
     env_file:
       - ./hadoop-hive.env
-    command: schematool -initSchema -dbType mysql && /opt/hive/bin/hive --service metastore
     volumes:
       - ./hook/hive:/opt/hive/hook/hive/
       - ./atlas-application.properties:/opt/hive/conf/atlas-application.properties
