@@ -95,6 +95,8 @@ services:
       - 16010:16010
     networks:
       - bigdata
+    depends_on:
+      - hbase-master
 
   hbase-region:
     image: myy92715/hbase-regionserver:2.2.3-hadoop3.2.1-java8
@@ -109,6 +111,8 @@ services:
       - 16030:16030
     networks:
       - bigdata
+    depends_on:
+      - zookeeper
 
   hive-server:
     image: myy92715/hive:3.1.2-mysql-metastore
@@ -141,14 +145,14 @@ services:
       - ./hook-bin:/opt/hive/hook-bin
     environment:
       SERVICE_PRECONDITION: 'namenode:9870 datanode:9864 hive-metastore-mysql:3306'
-      # HIVE_SITE_CONF_hive_metastore_schema_verification: "false"
+      HIVE_SITE_CONF_hive_metastore_schema_verification: "false"
     ports:
       - 9083:9083
     networks:
       - bigdata
 
   hive-metastore-mysql:
-    image: mysql:8.0.19
+    image: mysql:5.7
     container_name: bigdata-hive-metastore-mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
